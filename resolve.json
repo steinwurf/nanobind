@@ -1,0 +1,20 @@
+[
+    {
+        "name": "waf-tools",
+        "resolver": "git",
+        "method": "semver",
+        "major": 4,
+        "sources": [
+            "github.com/steinwurf/waf-tools.git"
+        ]
+    },
+    {
+        "name": "nanobind-source",
+        "resolver": "git",
+        "method": "checkout",
+        "checkout": "836405b6e2b64ceac42d6bc90081fed0275b800d",
+        "sources": [
+            "github.com/wjakob/nanobind.git"
+        ]
+    }
+]
