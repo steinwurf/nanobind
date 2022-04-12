@@ -1,7 +1,7 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.17)
 project(hello_world)
 
-find_package(Python COMPONENTS Interpreter Development)
+find_package(Python 3.8 COMPONENTS Interpreter Development.Module REQUIRED)
 # Use waf to resolve dependencies
 if(NOT DEFINED STEINWURF_RESOLVE)
   message(STATUS "Resolving dependencies...")

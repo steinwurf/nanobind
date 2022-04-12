@@ -1,0 +1,46 @@
+#! /usr/bin/env python
+# encoding: utf-8
+
+tests = bld.dependency_node("nanobind-source").find_dir("tests")
+
+bld(
+    features="cxx cxxshlib pyext",
+    source=tests.ant_glob("test_classes.cpp"),
+    target="test_classes_ext",
+    use=["nanobind"],
+)
+
+bld(
+    features="cxx cxxshlib pyext",
+    source=tests.ant_glob("test_enum.cpp"),
+    target="test_enum_ext",
+    use=["nanobind"],
+)
+
+bld(
+    features="cxx cxxshlib pyext",
+    source=tests.ant_glob("test_functions.cpp"),
+    target="test_functions_ext",
+    use=["nanobind"],
+)
+
+bld(
+    features="cxx cxxshlib pyext",
+    source=tests.ant_glob("test_holders.cpp"),
+    target="test_holders_ext",
+    use=["nanobind"],
+)
+
+bld(
+    features="cxx cxxshlib pyext",
+    source=tests.ant_glob("test_stl.cpp"),
+    target="test_stl_ext",
+    use=["nanobind"],
+)
+
+bld(
+    features="cxx cxxshlib pyext",
+    source=tests.ant_glob("test_tensor.cpp"),
+    target="test_tensor_ext",
+    use=["nanobind"],
+)

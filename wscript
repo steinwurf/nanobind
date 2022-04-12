@@ -32,6 +32,7 @@ def configure(conf):
         try:
             conf.load("python")
             conf.check_python_headers()
+            conf.check_python_version(minver=(3, 8))
             conf.env["BUILD_PYTHON"] = True
         except Exception as e:
             conf.env["BUILD_PYTHON"] = False
@@ -41,6 +42,27 @@ def configure(conf):
     if not conf.env["BUILD_PYTHON"]:
         conf.fatal(error_message)
 
+    os_env = dict(os.environ)
+
+    PYTHON_ENVIRONMENT_VARIABLES = "prefix SO LDFLAGS LIBDIR LIBPL INCLUDEPY Py_ENABLE_SHARED MACOSX_DEPLOYMENT_TARGET LDSHARED CFLAGS LDVERSION".split()
+    lst = conf.get_python_variables(
+        ["get_config_var('%s') or ''" % x for x in PYTHON_ENVIRONMENT_VARIABLES],
+        ["from distutils.sysconfig import get_config_var, get_python_lib"],
+    )
+    PYTHON_VERSION = lst[-1]
+    python_includes = [str(x) for x in lst if str(x).startswith("/usr/include/python3")]
+
+    if len(python_includes) > 1:
+        found_include_matching = False
+        for include in python_includes:
+            if include.endswith(PYTHON_VERSION, -len(PYTHON_VERSION), -1):
+                python_includes = include
+                found_include_matching = True
+                break
+        if not found_include_matching:
+            conf.fatal("Could not find matching python3-dev and python3 version")
+    else:
+        python_includes = python_includes[0]
     CXX = conf.env.get_flat("CXX")
 
     # Override python-config's compiler flags, because these are not
@@ -56,9 +78,10 @@ def configure(conf):
     if "g++" in CXX or "clang" in CXX:
         conf.env.append_value("CFLAGS", "-fPIC")
         conf.env.append_value("CXXFLAGS", "-fPIC")
+        conf.env.append_value("CXXFLAGS", "-fno-stack-protector")
 
     # Add some cxxflags to suppress some compiler-specific warnings
-    cxxflags = []
+    cxxflags = ["-I" + python_includes]
     # The deprecated "register" keyword is present in some Python 2.7 headers,
     # so the following flags are used to suppress these warnings (which are
     # treated as errors in C++17 mode)
@@ -73,30 +96,41 @@ def configure(conf):
     if "clang" in CXX:
         cxxflags += ["-fsized-deallocation"]
 
-    conf.env["CXXFLAGS_NANOBIND"] = cxxflags
+    conf.env["CXXFLAGS_NB"] = cxxflags
 
 
 def build(bld):
 
     # Path to the source repo
-    sources = bld.dependency_node("nanobind-source")
-    includes = sources.find_dir("include")
+    dir = bld.dependency_node("nanobind-source")
+    sources = dir.find_dir("src")
+    includes = [dir.find_dir("include"), dir.find_dir("ext/robin_map/include")]
 
-    bld(name="nanobind_includes", export_includes=[includes], use=["nanobind"])
+    bld(
+        features="cxx cxxshlib",
+        source=sources.ant_glob("*.cpp"),
+        target="nanobind",
+        export_includes=[includes],
+        includes=includes,
+        use=["NB"],
+        install_path="${PREFIX}/lib",
+    )
 
     if bld.is_toplevel():
 
         # The actual sources are stored outside this repo - so we manually
         # add them for the solution generator
-        bld.msvs_extend_sources = [sources]
+        bld.msvs_extend_sources = [sources, includes]
 
     if bld.is_toplevel():
         bld(
             features="cxx cxxshlib pyext",
-            source=bld.path.ant_glob("example/hello_world.cpp"),
+            source="example/hello_world.cpp",
             target="hello_world",
-            use=["nanobind_includes"],
+            use=[],
         )
+
+        # bld.recurse("test")
 
         if bld.has_tool_option("run_tests"):
             bld.add_post_fun(exec_test_python)

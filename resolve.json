@@ -2,8 +2,8 @@
     {
         "name": "waf-tools",
         "resolver": "git",
-        "method": "semver",
-        "major": 4,
+        "method": "checkout",
+        "checkout": "try-cxx17",
         "sources": [
             "github.com/steinwurf/waf-tools.git"
         ]
